@@ -1,0 +1,14 @@
+venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+data/argo_cache/
+data/processed_dates.txt
+models/vector_store/
+*.sqlite3

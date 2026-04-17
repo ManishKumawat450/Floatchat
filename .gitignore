@@ -12,3 +12,4 @@ data/argo_cache/
 data/processed_dates.txt
 models/vector_store/
 *.sqlite3
+.streamlit/secrets.toml

@@ -141,7 +141,7 @@ st.markdown(f"""
 
     @keyframes float {{
         0%, 100% {{ transform: translateY(0px); }}
-        50%      {{ transform: translateY(-12px); }}
+        50%      {{ transform: translateY(-8px); }}
     }}
 
     @keyframes pulse-ring {{
@@ -150,7 +150,7 @@ st.markdown(f"""
     }}
 
     @keyframes fadeSlideUp {{
-        from {{ opacity: 0; transform: translateY(18px); }}
+        from {{ opacity: 0; transform: translateY(12px); }}
         to   {{ opacity: 1; transform: translateY(0); }}
     }}
 
@@ -191,8 +191,28 @@ st.markdown(f"""
     }}
 
     /* ═══════════════════════════════
-       BASE & TYPOGRAPHY
+       PERFORMANCE OPTIMIZATION
     ═══════════════════════════════ */
+    [data-testid="stChatMessage"] {{
+        will-change: transform;
+        transform: translateZ(0);
+    }}
+
+    .chart-container {{
+        will-change: transform;
+        transform: translateZ(0);
+    }}
+
+    [data-testid="stDataFrame"] {{
+        will-change: transform;
+        transform: translateZ(0);
+    }}
+
+    /* SMOOTH SCROLLING */
+    [data-testid="stAppViewContainer"] {{
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }}
     html, body, [class*="css"] {{
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }}
@@ -203,7 +223,7 @@ st.markdown(f"""
     [data-testid="stAppViewContainer"], [data-testid="stApp"] {{
         background: linear-gradient(135deg, {colors['gradient_start']}, {colors['bg']}, {colors['gradient_end']}, {colors['bg']}) !important;
         background-size: 400% 400% !important;
-        animation: gradientShift 20s ease infinite !important;
+        animation: gradientShift 25s ease infinite !important;
         color: {colors['text']} !important;
     }}
 
@@ -213,8 +233,8 @@ st.markdown(f"""
     [data-testid="stSidebar"],
     [data-testid="stSidebar"] > div:first-child {{
         background: {colors['glass_bg']} !important;
-        backdrop-filter: blur(20px) saturate(180%) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        backdrop-filter: blur(10px) saturate(160%) !important;
+        -webkit-backdrop-filter: blur(10px) saturate(160%) !important;
         border-right: 1px solid {colors['glass_border']} !important;
     }}
 
@@ -236,16 +256,16 @@ st.markdown(f"""
 
     [data-testid="stChatInput"] {{
         background: {colors['glass_bg']} !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
         border: 1px solid {colors['glass_border']} !important;
         border-radius: 16px !important;
         box-shadow: {colors['glow']} !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
     }}
     [data-testid="stChatInput"]:focus-within {{
         border-color: rgba({colors['primary_rgb']}, 0.5) !important;
-        box-shadow: 0 0 30px rgba({colors['primary_rgb']}, 0.2) !important;
+        box-shadow: 0 0 20px rgba({colors['primary_rgb']}, 0.15) !important;
     }}
     [data-testid="stChatInput"] textarea {{
         color: {colors['text']} !important;
@@ -483,26 +503,21 @@ st.markdown(f"""
     ═══════════════════════════════ */
     .stButton > button {{
         background: {colors['card_bg']} !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
+        backdrop-filter: blur(6px) !important;
+        -webkit-backdrop-filter: blur(6px) !important;
         border: 1px solid {colors['card_border']} !important;
         color: {colors['text']} !important;
         border-radius: 12px !important;
         padding: 0.65rem 1rem !important;
         font-size: 0.88rem !important;
         font-weight: 500 !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transition: color 0.2s ease, border-color 0.2s ease !important;
         text-align: left !important;
     }}
     .stButton > button:hover {{
         border-color: rgba({colors['primary_rgb']}, 0.5) !important;
         color: {colors['primary']} !important;
         background: {colors['hover']} !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba({colors['primary_rgb']}, 0.15) !important;
-    }}
-    .stButton > button:active {{
-        transform: translateY(0px) !important;
     }}
 
     /* ═══════════════════════════════
@@ -623,14 +638,14 @@ st.markdown(f"""
     ═══════════════════════════════ */
     .chart-container {{
         background: {colors['glass_bg']};
-        backdrop-filter: blur(16px) saturate(150%);
-        -webkit-backdrop-filter: blur(16px) saturate(150%);
+        backdrop-filter: blur(8px) saturate(130%);
+        -webkit-backdrop-filter: blur(8px) saturate(130%);
         border: 1px solid {colors['glass_border']};
         border-radius: 20px;
         padding: 1.5rem;
         margin: 1rem 0;
         box-shadow: {colors['shadow']};
-        animation: scaleIn 0.5s ease-out;
+        animation: fadeSlideUp 0.3s ease-out;
         position: relative;
         overflow: hidden;
     }}
@@ -894,6 +909,559 @@ st.markdown(f"""
     .stSpinner > div {{
         border-top-color: {colors['primary']} !important;
     }}
+
+    /* ═══════════════════════════════
+       MOBILE RESPONSIVE — TABLET (768px)
+    ═══════════════════════════════ */
+    @media (max-width: 768px) {{
+        /* DISABLE HEAVY ANIMATIONS */
+        [data-testid="stAppViewContainer"], [data-testid="stApp"] {{
+            animation: none !important;
+            background: {colors['bg']} !important;
+        }}
+        
+        .main-title {{
+            animation: none !important;
+        }}
+
+        /* LAYOUT */
+        [data-testid="block-container"] {{
+            padding-top: 0.75rem;
+            padding-bottom: 4rem;
+            max-width: 100%;
+        }}
+
+        /* REDUCE BLUR & ANIMATIONS */
+        [data-testid="stSidebar"],
+        [data-testid="stSidebar"] > div:first-child {{
+            backdrop-filter: blur(5px) !important;
+            -webkit-backdrop-filter: blur(5px) !important;
+        }}
+
+        [data-testid="stChatInput"] {{
+            backdrop-filter: blur(5px) !important;
+            -webkit-backdrop-filter: blur(5px) !important;
+            transition: border-color 0.15s ease !important;
+        }}
+
+        .chart-container {{
+            backdrop-filter: blur(5px) !important;
+            -webkit-backdrop-filter: blur(5px) !important;
+            animation: fadeSlideUp 0.2s ease-out !important;
+        }}
+
+        .answer-box {{
+            backdrop-filter: blur(5px) !important;
+            -webkit-backdrop-filter: blur(5px) !important;
+            animation: fadeSlideUp 0.2s ease-out !important;
+        }}
+
+        [data-testid="stExpander"] {{
+            backdrop-filter: blur(5px) !important;
+            -webkit-backdrop-filter: blur(5px) !important;
+        }}
+
+        .stButton > button {{
+            backdrop-filter: blur(5px) !important;
+            -webkit-backdrop-filter: blur(5px) !important;
+            transition: color 0.15s ease, border-color 0.15s ease !important;
+        }}
+
+        [data-testid="stAlert"] {{
+            backdrop-filter: blur(5px) !important;
+        }}
+
+        /* DISABLE HOVER EFFECTS ON TOUCH */
+        @media (hover: none) {{
+            .feature-card:hover {{
+                transform: none !important;
+            }}
+            .stButton > button:hover {{
+                transform: none !important;
+                box-shadow: none !important;
+            }}
+        }}
+
+        /* TITLE & SUBTITLE */
+        .main-title {{
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+        }}
+        .subtitle {{
+            font-size: 0.75rem;
+            margin-bottom: 1.5rem;
+        }}
+
+        /* HERO SECTION */
+        .hero-container {{
+            padding: 2rem 0.75rem;
+        }}
+        .hero-icon {{
+            font-size: 3rem;
+        }}
+        .hero-heading {{
+            font-size: 1.4rem;
+        }}
+        .hero-sub {{
+            font-size: 0.9rem;
+        }}
+
+        /* FEATURE GRID — 3 columns on tablet */
+        .features-grid {{
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            max-width: 100%;
+            padding: 0 8px;
+        }}
+        .feature-card {{
+            padding: 1rem 0.7rem;
+        }}
+        .feature-icon {{
+            font-size: 1.5rem;
+        }}
+        .feature-label {{
+            font-size: 0.75rem;
+        }}
+        .feature-desc {{
+            font-size: 0.65rem;
+        }}
+
+        /* CHAT BUBBLES */
+        .user-bubble {{
+            font-size: 0.9rem;
+            padding: 12px 16px;
+        }}
+        .ai-bubble {{
+            font-size: 0.85rem;
+            padding: 14px 18px;
+        }}
+        .answer-box {{
+            padding: 1rem 1.2rem;
+            font-size: 0.9rem;
+        }}
+
+        /* BUTTONS */
+        .stButton > button {{
+            padding: 0.55rem 0.8rem !important;
+            font-size: 0.8rem !important;
+        }}
+
+        /* EXPANDER */
+        [data-testid="stExpander"] {{
+            border-radius: 8px;
+        }}
+
+        /* METRICS */
+        [data-testid="stMetricValue"] {{
+            font-size: 1.8rem !important;
+        }}
+
+        /* CHART CONTAINER */
+        .chart-container {{
+            padding: 1.2rem;
+            margin: 0.8rem 0;
+            border-radius: 16px;
+        }}
+        .chart-title {{
+            font-size: 0.85rem;
+            padding: 5px 10px;
+        }}
+        .viz-title {{
+            font-size: 1.1rem;
+        }}
+        .viz-section-title {{
+            font-size: 0.95rem;
+        }}
+    }}
+
+    /* ═══════════════════════════════
+       MOBILE RESPONSIVE — PHONE (480px)
+    ═══════════════════════════════ */
+    @media (max-width: 480px) {{
+        /* DISABLE ALL HEAVY ANIMATIONS ON MOBILE */
+        * {{
+            animation-duration: 0.15s !important;
+        }}
+
+        [data-testid="stAppViewContainer"], [data-testid="stApp"] {{
+            animation: none !important;
+            background: {colors['bg']} !important;
+            background-size: auto !important;
+        }}
+
+        .hero-icon {{
+            animation: none !important;
+        }}
+
+        .feature-card {{
+            animation: fadeSlideUp 0.15s ease-out !important;
+        }}
+
+        .user-msg-wrap {{
+            animation: fadeSlideUp 0.15s ease-out !important;
+        }}
+
+        .ai-msg-wrap {{
+            animation: fadeSlideUp 0.15s ease-out !important;
+        }}
+
+        .answer-box {{
+            animation: fadeSlideUp 0.15s ease-out !important;
+        }}
+
+        [data-testid="stChatMessage"] {{
+            animation: none !important;
+        }}
+
+        /* REDUCE ALL BLUR EFFECTS */
+        [data-testid="stSidebar"],
+        [data-testid="stSidebar"] > div:first-child {{
+            backdrop-filter: blur(3px) !important;
+            -webkit-backdrop-filter: blur(3px) !important;
+        }}
+
+        [data-testid="stChatInput"] {{
+            backdrop-filter: blur(3px) !important;
+            -webkit-backdrop-filter: blur(3px) !important;
+            transition: none !important;
+        }}
+
+        [data-testid="stChatInput"]:focus-within {{
+            box-shadow: 0 0 15px rgba({colors['primary_rgb']}, 0.1) !important;
+        }}
+
+        .chart-container {{
+            backdrop-filter: blur(3px) !important;
+            -webkit-backdrop-filter: blur(3px) !important;
+            padding: 1rem;
+            animation: none !important;
+        }}
+
+        .chart-container::after {{
+            display: none !important;
+        }}
+
+        .answer-box {{
+            backdrop-filter: blur(3px) !important;
+            -webkit-backdrop-filter: blur(3px) !important;
+            padding: 0.85rem 1rem;
+            animation: none !important;
+        }}
+
+        .answer-box::before {{
+            display: none !important;
+        }}
+
+        [data-testid="stExpander"] {{
+            backdrop-filter: blur(3px) !important;
+            -webkit-backdrop-filter: blur(3px) !important;
+        }}
+
+        .stButton > button {{
+            backdrop-filter: blur(3px) !important;
+            -webkit-backdrop-filter: blur(3px) !important;
+            transition: none !important;
+        }}
+
+        .stButton > button:hover {{
+            transform: none !important;
+            box-shadow: none !important;
+        }}
+
+        [data-testid="stAlert"] {{
+            backdrop-filter: blur(3px) !important;
+        }}
+
+        /* FEATURE CARD OPTIMIZATION */
+        .feature-card {{
+            background: {colors['card_bg']} !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }}
+
+        .feature-card::before {{
+            display: none !important;
+        }}
+
+        .feature-card:hover {{
+            transform: none !important;
+            box-shadow: none !important;
+        }}
+
+        /* USER BUBBLE OPTIMIZATION */
+        .user-bubble {{
+            animation: none !important;
+        }}
+
+        /* AI BUBBLE OPTIMIZATION */
+        .ai-bubble {{
+            animation: none !important;
+        }}
+
+        .ai-bubble::before {{
+            display: none !important;
+        }}
+
+        /* DISABLE SONAR RINGS */
+        .sonar-ring {{
+            display: none !important;
+        }}
+
+        /* DISABLE WAVE BAR */
+        .wave-bar {{
+            display: none !important;
+        }}
+
+        /* SIMPLIFY THEME BUTTON */
+        .theme-btn > button {{
+            transition: none !important;
+        }}
+
+        .theme-btn > button:hover {{
+            transform: none !important;
+        }}
+
+        /* SIDEBAR — COLLAPSE */
+        [data-testid="stSidebar"] {{
+            width: 100% !important;
+        }}
+
+        /* LAYOUT */
+        [data-testid="block-container"] {{
+            padding-top: 0.5rem;
+            padding-bottom: 3.5rem;
+            max-width: 100%;
+        }}
+
+        /* TITLE & SUBTITLE */
+        .main-title {{
+            font-size: 1.1rem;
+            margin-bottom: 2px;
+        }}
+        .subtitle {{
+            font-size: 0.7rem;
+            margin-bottom: 1rem;
+        }}
+
+        /* HERO SECTION */
+        .hero-container {{
+            padding: 1.5rem 0.5rem;
+        }}
+        .hero-icon {{
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }}
+        .hero-heading {{
+            font-size: 1.15rem;
+        }}
+        .hero-sub {{
+            font-size: 0.8rem;
+            max-width: 100%;
+        }}
+
+        /* FEATURE GRID — 2 columns on mobile */
+        .features-grid {{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            max-width: 100%;
+            padding: 0 6px;
+        }}
+        .feature-card {{
+            padding: 0.85rem 0.6rem;
+            border-radius: 12px;
+        }}
+        .feature-icon {{
+            font-size: 1.2rem;
+            margin-bottom: 0.3rem;
+        }}
+        .feature-label {{
+            font-size: 0.65rem;
+        }}
+        .feature-desc {{
+            font-size: 0.6rem;
+        }}
+
+        /* CHAT INPUT */
+        [data-testid="stChatInput"] {{
+            border-radius: 12px !important;
+        }}
+        [data-testid="stChatInput"] textarea {{
+            font-size: 0.85rem !important;
+        }}
+
+        /* CHAT MESSAGES */
+        .user-msg-wrap {{
+            margin-bottom: 10px;
+        }}
+        .user-bubble {{
+            font-size: 0.85rem;
+            padding: 10px 14px;
+            border-radius: 14px 14px 14px 2px;
+        }}
+        .user-label {{
+            gap: 6px;
+        }}
+        .user-label-badge {{
+            font-size: 0.6rem;
+            padding: 2px 8px;
+        }}
+        .user-label-name {{
+            font-size: 0.8rem;
+        }}
+
+        .ai-msg-wrap {{
+            margin-bottom: 12px;
+        }}
+        .ai-bubble {{
+            font-size: 0.8rem;
+            padding: 12px 16px;
+            border-radius: 2px 14px 14px 14px;
+        }}
+        .ai-avatar {{
+            width: 22px;
+            height: 22px;
+            font-size: 0.6rem;
+        }}
+        .ai-label-name {{
+            font-size: 0.8rem;
+        }}
+
+        .answer-box {{
+            padding: 0.85rem 1rem;
+            font-size: 0.85rem;
+            margin: 0.6rem 0;
+            border-radius: 12px;
+        }}
+
+        /* BUTTONS */
+        .stButton > button {{
+            padding: 0.5rem 0.7rem !important;
+            font-size: 0.75rem !important;
+            border-radius: 8px !important;
+        }}
+
+        .theme-btn > button {{
+            width: 38px !important;
+            height: 38px !important;
+            font-size: 1.1rem !important;
+        }}
+
+        /* EXPANDER */
+        [data-testid="stExpander"] {{
+            border-radius: 8px;
+        }}
+
+        /* METRICS */
+        [data-testid="stMetricValue"] {{
+            font-size: 1.4rem !important;
+        }}
+        [data-testid="stMetricLabel"] {{
+            font-size: 0.65rem !important;
+        }}
+
+        /* CHART CONTAINER */
+        .chart-container {{
+            padding: 1rem;
+            margin: 0.6rem 0;
+            border-radius: 12px;
+        }}
+        .chart-title {{
+            font-size: 0.75rem;
+            padding: 4px 8px;
+        }}
+        .viz-header {{
+            margin-bottom: 12px;
+        }}
+        .viz-title {{
+            font-size: 0.95rem;
+        }}
+        .viz-section-title {{
+            font-size: 0.85rem;
+            margin: 12px 0 8px 0;
+        }}
+        .viz-source {{
+            font-size: 0.75rem;
+            padding: 6px 10px;
+        }}
+
+        /* RESPONSE META */
+        .response-time-badge {{
+            font-size: 0.65rem;
+        }}
+        .msg-timestamp {{
+            font-size: 0.65rem;
+        }}
+
+        /* SONAR RINGS */
+        .sonar-ring {{
+            width: 60px;
+            height: 60px;
+        }}
+
+        /* SIDEBAR */
+        .sidebar-label {{
+            font-size: 0.65rem;
+            margin-bottom: 8px;
+        }}
+        .sidebar-brand-text {{
+            font-size: 1.1rem;
+        }}
+
+        /* ALERTS */
+        [data-testid="stAlert"] {{
+            border-radius: 8px !important;
+        }}
+
+        /* DATAFRAME */
+        [data-testid="stDataFrame"] {{
+            font-size: 0.8rem;
+        }}
+
+        /* PROCESSING INDICATOR */
+        .processing-indicator {{
+            padding: 12px 14px;
+            margin: 6px 0;
+        }}
+        .processing-text {{
+            font-size: 0.8rem;
+        }}
+        .dot-loader span {{
+            width: 6px;
+            height: 6px;
+        }}
+    }}
+
+    /* ═══════════════════════════════
+       MOBILE RESPONSIVE — SMALL PHONE (360px)
+    ═══════════════════════════════ */
+    @media (max-width: 360px) {{
+        [data-testid="block-container"] {{
+            padding-left: 4px;
+            padding-right: 4px;
+        }}
+
+        .features-grid {{
+            gap: 8px;
+            padding: 0 4px;
+        }}
+        .feature-card {{
+            padding: 0.75rem 0.5rem;
+        }}
+        .feature-icon {{
+            font-size: 1rem;
+        }}
+        .feature-label {{
+            font-size: 0.6rem;
+        }}
+
+        .main-title {{
+            font-size: 1rem;
+        }}
+        .hero-heading {{
+            font-size: 1rem;
+        }}
+    }}
+
 </style>
 """, unsafe_allow_html=True)
 

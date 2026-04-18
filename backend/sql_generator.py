@@ -104,20 +104,26 @@ def run_query(sql: str) -> list:
 
 
 def explain_result(user_query: str, sql: str, result: list) -> str:
-    prompt = f"""You are a friendly oceanographic data assistant.
+    prompt = f"""You are OceanAI, a friendly oceanographic data assistant.
 The user asked: "{user_query}"
 SQL used: {sql}
 Data result: {result[:5]}
 
-Give a clear, simple answer in 2-3 sentences.
-Include the actual numbers from the result.
-Be conversational and helpful."""
+Format your response as follows:
+1. Start with a brief summary paragraph (2-3 sentences) with actual numbers from the result.
+2. Then list key findings as bullet points using "- " prefix, including specific values.
+3. Add a section "(Data Source — ARGO Float Network · INCOIS)" on its own line.
+4. Then add "Follow-up questions:" with 2 numbered questions the user might want to ask next.
+
+Be conversational, helpful, and include actual numbers from the result.
+Do NOT use markdown headers or bold formatting.
+Use plain text with bullet points."""
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
-        max_tokens=200
+        max_tokens=400
     )
     return response.choices[0].message.content.strip()
 

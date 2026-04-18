@@ -5,6 +5,7 @@ import pandas as pd
 import sys
 import os
 import re
+import time
 
 from datetime import datetime
 
@@ -26,6 +27,9 @@ if "pending_query" not in st.session_state:
 
 if "theme" not in st.session_state:
     st.session_state.theme = "dark"  # Default theme
+
+if "viz_data" not in st.session_state:
+    st.session_state.viz_data = None  # Current visualization data for right panel
 
 # ─────────────────────────────
 # Page Config
@@ -57,10 +61,14 @@ if theme == "light":
         "hover": "rgba(14, 165, 233, 0.08)",
         "card_bg": "rgba(255, 255, 255, 0.6)",
         "card_border": "rgba(148, 163, 184, 0.3)",
-        "user_bubble": "linear-gradient(135deg, #0ea5e9, #6366f1)",
+        "user_bubble_bg": "linear-gradient(135deg, #0ea5e9, #6366f1)",
         "user_text": "#ffffff",
+        "ai_bubble_bg": "#ffffff",
+        "ai_border": "#e2e8f0",
         "glass_bg": "rgba(255, 255, 255, 0.55)",
         "glass_border": "rgba(255, 255, 255, 0.6)",
+        "chat_panel_bg": "#f8fafc",
+        "viz_panel_bg": "#ffffff",
         "plotly_template": "plotly_white",
         "plotly_grid": "rgba(148, 163, 184, 0.15)",
         "map_ocean": "rgba(14, 165, 233, 0.08)",
@@ -71,6 +79,10 @@ if theme == "light":
         "gradient_end": "#f0f4ff",
         "shadow": "0 8px 32px rgba(0, 0, 0, 0.08)",
         "glow": "0 0 30px rgba(14, 165, 233, 0.15)",
+        "timestamp_color": "#94a3b8",
+        "badge_bg": "rgba(16, 185, 129, 0.1)",
+        "badge_text": "#059669",
+        "divider_line": "#e2e8f0",
     }
 else:
     colors = {
@@ -87,10 +99,14 @@ else:
         "hover": "rgba(0, 212, 255, 0.08)",
         "card_bg": "rgba(19, 26, 58, 0.6)",
         "card_border": "rgba(99, 102, 241, 0.25)",
-        "user_bubble": "linear-gradient(135deg, #0ea5e9, #7c3aed)",
+        "user_bubble_bg": "linear-gradient(135deg, #0ea5e9, #7c3aed)",
         "user_text": "#ffffff",
+        "ai_bubble_bg": "rgba(19, 26, 58, 0.8)",
+        "ai_border": "rgba(99, 102, 241, 0.2)",
         "glass_bg": "rgba(15, 20, 50, 0.65)",
         "glass_border": "rgba(99, 102, 241, 0.2)",
+        "chat_panel_bg": "rgba(10, 14, 39, 0.95)",
+        "viz_panel_bg": "rgba(19, 26, 58, 0.5)",
         "plotly_template": "plotly_dark",
         "plotly_grid": "rgba(99, 102, 241, 0.1)",
         "map_ocean": "rgba(0, 212, 255, 0.04)",
@@ -101,6 +117,10 @@ else:
         "gradient_end": "#131a3a",
         "shadow": "0 8px 32px rgba(0, 0, 0, 0.4)",
         "glow": "0 0 40px rgba(0, 212, 255, 0.12)",
+        "timestamp_color": "#64748b",
+        "badge_bg": "rgba(16, 185, 129, 0.15)",
+        "badge_text": "#34d399",
+        "divider_line": "rgba(99, 102, 241, 0.15)",
     }
 
 # ─────────────────────────────
@@ -253,7 +273,7 @@ st.markdown(f"""
        MAIN TITLE — ANIMATED GRADIENT
     ═══════════════════════════════ */
     .main-title {{
-        font-size: 3.2rem;
+        font-size: 1.6rem;
         font-weight: 800;
         background: linear-gradient(135deg, {colors['primary']}, {colors['accent']}, {colors['primary']});
         background-size: 200% auto;
@@ -262,41 +282,160 @@ st.markdown(f"""
         background-clip: text;
         animation: shimmer 4s linear infinite;
         margin-bottom: 0px;
-        text-align: center;
-        letter-spacing: -1.5px;
+        letter-spacing: -0.5px;
         line-height: 1.2;
     }}
 
     .subtitle {{
-        font-size: 1rem;
+        font-size: 0.82rem;
         color: {colors['text_muted']} !important;
         font-weight: 400;
-        text-align: center;
-        margin-top: 0.3rem;
+        margin-top: 2px;
+        margin-bottom: 12px;
+        letter-spacing: 0.3px;
         margin-bottom: 2rem;
         letter-spacing: 0.5px;
     }}
 
     /* ═══════════════════════════════
-       CHAT MESSAGE STYLING
+       CHAT MESSAGE — HIDE DEFAULT
     ═══════════════════════════════ */
     [data-testid="stChatMessage"] {{
         background-color: transparent !important;
         animation: fadeSlideUp 0.4s ease-out;
     }}
-    [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] p {{
-        color: {colors['text']} !important;
+
+    /* ═══════════════════════════════
+       USER MESSAGE BUBBLE
+    ═══════════════════════════════ */
+    .user-msg-wrap {{
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        animation: fadeSlideUp 0.4s ease-out;
+    }}
+    .user-label {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }}
+    .user-label-badge {{
+        background: {colors['user_bubble_bg']};
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 10px;
+        letter-spacing: 0.5px;
+    }}
+    .user-label-name {{
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: {colors['text']};
+    }}
+    .user-bubble {{
+        background: {colors['user_bubble_bg']};
+        color: {colors['user_text']};
+        padding: 14px 20px;
+        border-radius: 18px 18px 18px 4px;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        max-width: 100%;
+        box-shadow: 0 4px 15px rgba({colors['primary_rgb']}, 0.2);
+    }}
+    .msg-timestamp {{
+        font-size: 0.72rem;
+        color: {colors['timestamp_color']};
+        margin-top: 5px;
+        font-weight: 400;
     }}
 
-    /* Alternate message background */
-    [data-testid="stChatMessage"]:nth-child(even) {{
-        background: {colors['card_bg']} !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid {colors['card_border']} !important;
-        border-radius: 16px;
-        padding: 8px 18px;
-        margin: 4px 0;
+    /* ═══════════════════════════════
+       AI MESSAGE BUBBLE
+    ═══════════════════════════════ */
+    .ai-msg-wrap {{
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        animation: fadeSlideUp 0.4s ease-out;
+    }}
+    .ai-label {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }}
+    .ai-avatar {{
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, {colors['primary']}, {colors['accent']});
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        color: #fff;
+        font-weight: 800;
+    }}
+    .ai-label-name {{
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: {colors['text']};
+    }}
+    .ai-bubble {{
+        background: {colors['ai_bubble_bg']};
+        border: 1px solid {colors['ai_border']};
+        border-left: 4px solid {colors['primary']};
+        padding: 16px 22px;
+        border-radius: 4px 18px 18px 18px;
+        font-size: 0.93rem;
+        line-height: 1.75;
+        max-width: 100%;
+        color: {colors['text']};
+        box-shadow: {colors['shadow']};
+        position: relative;
+        overflow: hidden;
+    }}
+    .ai-bubble::before {{
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, {colors['primary']}, {colors['accent']}, transparent);
+    }}
+    .ai-bubble p {{
+        margin: 0 0 8px 0;
+        color: {colors['text']};
+    }}
+    .ai-bubble ul {{
+        padding-left: 16px;
+        margin: 8px 0;
+    }}
+    .ai-bubble li {{
+        color: {colors['text']};
+        margin-bottom: 4px;
+    }}
+    .response-meta {{
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 6px;
+    }}
+    .response-time-badge {{
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: {colors['badge_bg']};
+        color: {colors['badge_text']};
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 10px;
     }}
 
     /* ═══════════════════════════════
@@ -420,6 +559,63 @@ st.markdown(f"""
         text-transform: uppercase !important;
         letter-spacing: 1px !important;
         font-size: 0.75rem !important;
+    }}
+
+    /* ═══════════════════════════════
+       VISUALIZATION SOURCE & STATS
+    ═══════════════════════════════ */
+    .viz-source {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 8px 12px;
+        background: {colors['card_bg']};
+        border-radius: 10px;
+        font-size: 0.82rem;
+        color: {colors['text_muted']};
+    }}
+    .viz-source a {{
+        color: {colors['primary']};
+        text-decoration: none;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }}
+    
+    .viz-section-title {{
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: {colors['text']};
+        margin: 20px 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid {colors['divider_line']};
+    }}
+
+    .viz-header {{
+        margin-bottom: 20px;
+    }}
+    .viz-title {{
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: {colors['text']};
+        margin: 0;
+    }}
+    .viz-subtitle {{
+        font-size: 0.82rem;
+        color: {colors['text_muted']};
+        margin-top: 2px;
+    }}
+
+    .viz-chart-label {{
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: {colors['text']};
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }}
 
     /* ═══════════════════════════════
@@ -751,6 +947,42 @@ def wants_sql(query: str) -> bool:
     return any(k in query.lower() for k in keywords)
 
 # ─────────────────────────────
+# Compute Statistics from DataFrame
+# ─────────────────────────────
+def compute_stats(df):
+    """Extract key statistics from dataframe columns"""
+    stats = []
+    
+    # Temperature stats
+    temp_cols = [c for c in df.columns if 'temp' in c.lower() or c.lower() == 'avg']
+    if temp_cols:
+        temp_col = temp_cols[0]
+        if pd.api.types.is_numeric_dtype(df[temp_col]):
+            stats.append(("Min Temp", f"{df[temp_col].min():.2f}°C"))
+            stats.append(("Max Temp", f"{df[temp_col].max():.2f}°C"))
+            stats.append(("Avg Temp", f"{df[temp_col].mean():.2f}°C"))
+    
+    # Salinity stats
+    sal_cols = [c for c in df.columns if 'sal' in c.lower()]
+    if sal_cols:
+        sal_col = sal_cols[0]
+        if pd.api.types.is_numeric_dtype(df[sal_col]):
+            stats.append(("Min Salinity", f"{df[sal_col].min():.2f} PSU"))
+            stats.append(("Max Salinity", f"{df[sal_col].max():.2f} PSU"))
+    
+    # Count stats
+    count_cols = [c for c in df.columns if 'count' in c.lower()]
+    if count_cols:
+        count_col = count_cols[0]
+        if pd.api.types.is_numeric_dtype(df[count_col]):
+            stats.append(("Total Count", f"{int(df[count_col].sum()):,}"))
+    
+    # Data points count
+    stats.append(("Data Points", str(len(df))))
+    
+    return stats
+
+# ─────────────────────────────
 # Chart Function — Enhanced
 # ─────────────────────────────
 def show_chart(df, query=""):
@@ -930,9 +1162,9 @@ with st.sidebar:
     # Quick prompts
     st.markdown('<div class="sidebar-label">💡 Quick Query</div>', unsafe_allow_html=True)
     sample_queries = [
+        ("🧂", "Salinity profiles near equator in Jan 2024"),
         ("🌡️", "Avg temp in Arabian Sea in 2023?"),
         ("🔢", "How many floats in the Indian Ocean?"),
-        ("🧂", "Salinity profiles near equator in Jan 2024"),
         ("📍", "Float locations in Arabian Sea in 2023"),
     ]
     for icon, q in sample_queries:
@@ -952,6 +1184,36 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     
+
+# ─────────────────────────────
+# Format AI Response HTML
+# ─────────────────────────────
+def format_ai_html(text):
+    """Convert plain text to styled HTML with proper formatting."""
+    html = text
+    # Escape HTML entities first
+    html = html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # Convert back allowed tags
+    html = html.replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
+    html = html.replace("&lt;i&gt;", "<i>").replace("&lt;/i&gt;", "</i>")
+    html = html.replace("&lt;br/&gt;", "<br/>")
+    # Handle bullet points
+    lines = html.split("\n")
+    formatted_lines = []
+    for line in lines:
+        if line.strip().startswith("•") or line.strip().startswith("-"):
+            formatted_lines.append(f"<li style='margin-left:20px;'>{line.strip()[1:].strip()}</li>")
+        else:
+            formatted_lines.append(line)
+    html = "\n".join(formatted_lines)
+    if "<li" in html:
+        html = html.replace("<li", "<ul><li").replace("</li>\n<li", "</li><li") + "</ul>"
+    # Italicize source references (words in parentheses with 'Source' or similar)
+    html = html.replace("(Source:", "<i style='color:" + colors['text_muted'] + "'>(Source:")
+    html = html.replace("INCOIS)", "INCOIS)</i>")
+    # Highlight follow-up questions
+    html = html.replace("?", f"?<span style='color:{colors['accent']}'>⚡</span>")
+    return html
 
 # ─────────────────────────────
 # Chat History
@@ -1015,23 +1277,60 @@ if not st.session_state.messages and not st.session_state.is_processing:
 
 # Display history
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        if msg["role"] == "assistant":
-            st.markdown(
-                f'<div class="answer-box"><b>AI Response:</b><br/>{msg["content"]}</div>',
-                unsafe_allow_html=True
-            )
-            if "sql" in msg and wants_sql(msg.get("query", "")):
-                with st.expander("🔍 View SQL Query"):
-                    st.code(msg["sql"], language="sql")
-            if "data" in msg and msg["data"]:
-                df = pd.DataFrame(msg["data"])
-                if not df.empty:
-                    with st.expander("📄 View Raw Data"):
-                        st.dataframe(df, width='stretch')
-                    show_chart(df, msg.get("query", ""))
-        else:
-            st.markdown(msg["content"])
+    if msg["role"] == "user":
+        ts = msg.get("timestamp", "")
+        st.markdown(f"""
+        <div style="margin-bottom:20px;">
+            <div style="text-align:right;margin-bottom:8px;">
+                <span style="background:linear-gradient(135deg,{colors['primary']},{colors['accent']});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:600;">You</span>
+                <span style="color:{colors['text_muted']};font-size:0.8rem;margin-left:8px;">{ts}</span>
+            </div>
+            <div style="background:{colors['card_bg']};border-left:3px solid {colors['primary']};border-radius:8px;padding:12px 14px;max-width:80%;margin-left:auto;">
+                {msg['content']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    elif msg["role"] == "assistant":
+        ts = msg.get("timestamp", "")
+        formatted = format_ai_html(msg["content"])
+        st.markdown(f"""
+        <div style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;margin-bottom:8px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,{colors['primary']},{colors['accent']});display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;margin-right:8px;">O</div>
+                <span style="color:{colors['text']};font-weight:600;">FloatChat</span>
+                <span style="color:{colors['text_muted']};font-size:0.8rem;margin-left:8px;">{ts}</span>
+            </div>
+            <div style="background:{colors['card_bg']};border-left:3px solid {colors['accent']};border-radius:8px;padding:14px 16px;max-width:85%;">
+                {formatted}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # SQL expander
+        if "sql" in msg and wants_sql(msg.get("query", "")):
+            with st.expander("🔍 View SQL Query"):
+                st.code(msg["sql"], language="sql")
+        
+        # Data visualization and stats
+        if "data" in msg and msg["data"]:
+            df = pd.DataFrame(msg["data"])
+            if not df.empty:
+                show_chart(df, msg.get("query", ""))
+                
+                # Source attribution
+                st.markdown(f'<div style="text-align:center;margin:12px 0;font-size:0.75rem;color:{colors["text_muted"]}">Source: ARGO Float Network · INCOIS&nbsp;&nbsp;<a href="https://www.incois.gov.in/portal/argo/argofloats_702.jsp" target="_blank" style="color:{colors["primary"]}">🔗 View Source</a></div>', unsafe_allow_html=True)
+                
+                # Statistics
+                stats = compute_stats(df)
+                if stats:
+                    st.markdown(f'<div style="margin-top:16px;font-weight:600;color:{colors["text"]};font-size:0.9rem;text-transform:uppercase;letter-spacing:1px;">📊 Statistics</div>', unsafe_allow_html=True)
+                    stat_cols = st.columns(2)
+                    for i, (label, value) in enumerate(stats):
+                        with stat_cols[i % 2]:
+                            st.markdown(f'<div style="background:{colors["card_bg"]};border:1px solid {colors["card_border"]};border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:10px;"><div style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,{colors["primary"]},{colors["accent"]});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{value}</div><div style="font-size:0.72rem;color:{colors["text_muted"]};text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:600;">{label}</div></div>', unsafe_allow_html=True)
+                
+                with st.expander("📄 View Raw Data"):
+                    st.dataframe(df, use_container_width=True)
 
 # ─────────────────────────────
 # Chat Input & Action Logic
@@ -1091,9 +1390,22 @@ if st.session_state.is_processing and st.session_state.pending_query:
         if result["data"] and "error" not in result["data"][0]:
             df = pd.DataFrame(result["data"])
             if not df.empty:
+                show_chart(df, query)
+                
+                # Source attribution
+                st.markdown("""<div class="viz-source">Source: ARGO Float Network · INCOIS&nbsp;&nbsp;<a href="https://www.incois.gov.in/portal/argo/argofloats_702.jsp" target="_blank">🔗 View Source</a></div>""", unsafe_allow_html=True)
+                
+                # Statistics
+                stats = compute_stats(df)
+                if stats:
+                    st.markdown('<div class="viz-section-title">Statistics</div>', unsafe_allow_html=True)
+                    stat_cols = st.columns(2)
+                    for i, (label, value) in enumerate(stats):
+                        with stat_cols[i % 2]:
+                            st.markdown(f'<div style="background:{colors["card_bg"]};border:1px solid {colors["card_border"]};border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:10px;"><div style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,{colors["primary"]},{colors["accent"]});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{value}</div><div style="font-size:0.72rem;color:{colors["text_muted"]};text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:600;">{label}</div></div>', unsafe_allow_html=True)
+                
                 with st.expander("📄 View Raw Data"):
                     st.dataframe(df, width='stretch')
-                show_chart(df, query)
         else:
             st.info("No numerical or tabular data available for charting under this context.")
 

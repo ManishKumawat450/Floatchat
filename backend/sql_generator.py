@@ -65,6 +65,20 @@ Rules:
    Example: 15-06-2024 → date >= '2024-06-15' AND date < '2024-06-16'
 8. For year queries use EXTRACT(YEAR FROM date) = YYYY
 9. For month queries use EXTRACT(MONTH FROM date) = MM AND EXTRACT(YEAR FROM date) = YYYY
+10. CRITICAL - For charting queries (anomalies, trends, analysis, comparison):
+    - ALWAYS include raw date column: SELECT date, ...
+    - For temperature queries: include temperature column → date + temperature → frontend will chart
+    - For salinity queries: include salinity column → date + salinity → frontend will chart
+    - For location queries: include latitude, longitude → frontend will show map
+    - Use GROUP BY date to get time series, then SELECT date, temperature
+    - Example: SELECT DATE(date) as date, AVG(temperature) as temperature FROM ... GROUP BY DATE(date) ORDER BY date
+    - This ensures frontend can detect and chart the results
+11. For "distribution" or "report" queries: GROUP BY date or region to create summaries with counts/averages
+12. For "latest" or "current" queries: ORDER BY date DESC LIMIT 100 to get recent observations
+13. For "location" or "deployment" queries: SELECT latitude, longitude, float_id, date to enable map visualization
+14. For "vertical profile" or "depth" queries: SELECT pressure, temperature (or salinity) ORDER BY pressure to show depth gradients
+15. For "seasonal" queries: Include EXTRACT(MONTH FROM date) and GROUP BY month to show monthly patterns
+16. For "multi-parameter" queries: Return date, temperature, salinity, pressure in one result set (frontend will pick columns to display)
 
 User Query: {user_query}
 

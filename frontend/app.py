@@ -1164,6 +1164,7 @@ with st.sidebar:
     sample_queries = [
         ("🧂", "Salinity profiles near equator in Jan 2024"),
         ("🌡️", "Avg temp in Arabian Sea in 2023?"),
+        ("🌡️", "Analyze temperature anomalies in Arabian Sea (2023-2024)"),
         ("🔢", "How many floats in the Indian Ocean?"),
         ("📍", "Float locations in Arabian Sea in 2023"),
     ]

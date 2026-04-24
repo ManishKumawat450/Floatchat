@@ -6,29 +6,25 @@ import psycopg2
 
 load_dotenv()
 
-# ─────────────────────────────
 # ChromaDB Setup
-# ─────────────────────────────
 CHROMA_DIR = "models/vector_store"
 os.makedirs(CHROMA_DIR, exist_ok=True)
 
-# Embedding function — sentence transformers
+#Embedding function — sentence transformers
 embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="all-MiniLM-L6-v2"
 )
 
-# ChromaDB client
+#ChromaDB client
 client = chromadb.PersistentClient(path=CHROMA_DIR)
 
-# Collection banao
+#Collection create karo ya get karo
 collection = client.get_or_create_collection(
     name="floatchat_knowledge",
     embedding_function=embedding_fn
 )
 
-# ─────────────────────────────
 # Knowledge Base — Ocean Facts
-# ─────────────────────────────
 OCEAN_KNOWLEDGE = [
     {
         "id": "arabian_sea_1",
@@ -107,13 +103,12 @@ OCEAN_KNOWLEDGE = [
     }
 ]
 
-# ─────────────────────────────
+
 # Knowledge Base Load Karo
-# ─────────────────────────────
 def load_knowledge_base():
     """Load ocean knowledge into ChromaDB"""
 
-    # Already loaded hai?
+    # Already loaded hai
     existing = collection.count()
     if existing > 0:
         print(f"Knowledge base already loaded: {existing} documents")
@@ -133,13 +128,9 @@ def load_knowledge_base():
 
     print(f"Loaded {len(texts)} documents into ChromaDB!")
 
-# ─────────────────────────────
-# Query — Relevant Context Lo
-# ─────────────────────────────
+
+#Query—Relevant Context Lo
 def get_relevant_context(query: str, n_results: int = 3) -> str:
-    """
-    User query ke liye relevant context return karo
-    """
     results = collection.query(
         query_texts=[query],
         n_results=n_results
@@ -153,9 +144,7 @@ def get_relevant_context(query: str, n_results: int = 3) -> str:
 
     return context
 
-# ─────────────────────────────
 # RAG Enhanced SQL Generator
-# ─────────────────────────────
 def ask_with_rag(user_query: str) -> dict:
     """
     RAG pipeline:

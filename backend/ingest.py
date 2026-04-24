@@ -7,9 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─────────────────────────────
-# Database Connection
-# ─────────────────────────────
+#Localhost Database Connection 
 def get_connection():
     return psycopg2.connect(
         host     = os.getenv("DB_HOST"),
@@ -19,15 +17,11 @@ def get_connection():
         password = os.getenv("DB_PASSWORD")
     )
 
-# ─────────────────────────────
-# India Region Check
-# ─────────────────────────────
+
 def is_india_region(lat, lon):
     return (0 <= lat <= 26) and (55 <= lon <= 101)
 
-# ─────────────────────────────
 # Processed Files Tracker
-# ─────────────────────────────
 PROCESSED_FILE = "data/processed_dates.txt"
 
 def _load_processed_dates() -> set:
@@ -45,9 +39,7 @@ def _mark_file_processed(date_str: str, processed_set: set):
             f.write(date_str + "\n")
         processed_set.add(date_str)
 
-# ─────────────────────────────
-# DB Mein Already Hai?
-# ─────────────────────────────
+# Check if already ingested
 def is_already_ingested(date: datetime) -> bool:
     date_str  = date.strftime("%Y-%m-%d")
     processed = _load_processed_dates()
@@ -67,13 +59,12 @@ def is_already_ingested(date: datetime) -> bool:
     except Exception:
         return False
 
-# ─────────────────────────────
+
 # Single File Process
-# ─────────────────────────────
 def process_file(filepath):
     print(f"\n📂 Processing: {os.path.basename(filepath)}")
 
-    # Corrupt file check
+    #Corrupt file check
     try:
         ds = xr.open_dataset(filepath)
     except Exception as e:
@@ -178,7 +169,6 @@ def process_file(filepath):
     conn.close()
     ds.close()
 
-    # Mark as processed — FIXED: ab process_file se bhi mark hoga
     try:
         date_from_file = os.path.basename(filepath)[:8]
         date_str       = f"{date_from_file[:4]}-{date_from_file[4:6]}-{date_from_file[6:8]}"
@@ -192,9 +182,7 @@ def process_file(filepath):
 
     return inserted
 
-# ─────────────────────────────
-# Saari Files Process
-# ─────────────────────────────
+#All  Files Process
 def ingest_all():
     cache_dir = "data/argo_cache"
     files     = sorted([
@@ -205,7 +193,7 @@ def ingest_all():
     print(f"Total files: {len(files)}")
     print("Ingestion starting...\n")
 
-    # Ek baar saare processed dates load karo
+
     processed_set = _load_processed_dates()
     print(f"Already processed: {len(processed_set)} dates — will skip these\n")
 
@@ -216,7 +204,7 @@ def ingest_all():
 
     for filename in files:
 
-        # Filename se date nikalo
+        #Filename se date extract karo
         try:
             date_part = filename[:8]
             date_str  = f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]}"

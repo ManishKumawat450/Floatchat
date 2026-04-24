@@ -1,6 +1,8 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 import pandas as pd
 import sys
 import os
@@ -206,6 +208,22 @@ st.markdown(f"""
     [data-testid="stDataFrame"] {{
         will-change: transform;
         transform: translateZ(0);
+    }}
+
+    /* ═══════════════════════════════
+       FORCE PLOTLY CHARTS — WHITE BG
+    ═══════════════════════════════ */
+    [data-testid="stPlotlyChart"],
+    [data-testid="stPlotlyChart"] > div,
+    [data-testid="stPlotlyChart"] iframe {{
+        background-color: transparent !important;
+        border-radius: 6px;
+    }}
+    .js-plotly-plot .plotly .main-svg {{
+        background: transparent !important;
+    }}
+    .js-plotly-plot .plotly .bg {{
+        fill: transparent !important;
     }}
 
     /* SMOOTH SCROLLING */
@@ -577,8 +595,62 @@ st.markdown(f"""
     }}
 
     /* ═══════════════════════════════
-       VISUALIZATION SOURCE & STATS
+       VISUALIZATION PANEL — RIGHT SIDE
     ═══════════════════════════════ */
+    .viz-panel {{
+        background: {colors['viz_panel_bg']};
+        border: 1px solid {colors['ai_border']};
+        border-radius: 16px;
+        padding: 20px 24px;
+        min-height: 400px;
+        box-shadow: {colors['shadow']};
+        position: relative;
+        overflow: hidden;
+    }}
+    .viz-panel::before {{
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, {colors['primary']}, {colors['accent']}, transparent);
+    }}
+
+    .viz-header {{
+        margin-bottom: 20px;
+    }}
+    .viz-title {{
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: {colors['text']};
+        margin: 0;
+    }}
+    .viz-subtitle {{
+        font-size: 0.82rem;
+        color: {colors['text_muted']};
+        margin-top: 2px;
+    }}
+
+    .viz-section-title {{
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: {colors['text']};
+        margin: 20px 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid {colors['divider_line']};
+    }}
+
+    .viz-chart-label {{
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: {colors['text']};
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }}
+
     .viz-source {{
         display: flex;
         align-items: center;
@@ -598,39 +670,65 @@ st.markdown(f"""
         align-items: center;
         gap: 4px;
     }}
-    
-    .viz-section-title {{
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: {colors['text']};
-        margin: 20px 0 12px 0;
-        padding-bottom: 8px;
-        border-bottom: 1px solid {colors['divider_line']};
-    }}
 
-    .viz-header {{
-        margin-bottom: 20px;
+    .viz-stats-grid {{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 14px;
     }}
-    .viz-title {{
-        font-size: 1.35rem;
+    .viz-stat-card {{
+        background: {colors['card_bg']};
+        border: 1px solid {colors['card_border']};
+        border-radius: 12px;
+        padding: 14px 16px;
+        text-align: center;
+    }}
+    .viz-stat-value {{
+        font-size: 1.3rem;
         font-weight: 800;
-        color: {colors['text']};
-        margin: 0;
+        background: linear-gradient(135deg, {colors['primary']}, {colors['accent']});
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }}
-    .viz-subtitle {{
-        font-size: 0.82rem;
+    .viz-stat-label {{
+        font-size: 0.72rem;
         color: {colors['text_muted']};
-        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-top: 4px;
+        font-weight: 600;
     }}
 
-    .viz-chart-label {{
-        font-size: 0.95rem;
+    .viz-description {{
+        font-size: 0.88rem;
+        color: {colors['text']};
+        line-height: 1.65;
+        margin-top: 10px;
+    }}
+
+    .viz-empty {{
+        text-align: center;
+        padding: 60px 20px;
+        color: {colors['text_muted']};
+    }}
+    .viz-empty-icon {{
+        font-size: 3.5rem;
+        margin-bottom: 16px;
+        display: block;
+        opacity: 0.4;
+        animation: float 3s ease-in-out infinite;
+    }}
+    .viz-empty-title {{
+        font-size: 1.1rem;
         font-weight: 600;
         color: {colors['text']};
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        margin-bottom: 6px;
+    }}
+    .viz-empty-sub {{
+        font-size: 0.85rem;
+        color: {colors['text_muted']};
     }}
 
     /* ═══════════════════════════════
@@ -1514,48 +1612,84 @@ def wants_sql(query: str) -> bool:
     keywords = ['sql', 'query', 'code', 'how did you', 'show query', 'database query']
     return any(k in query.lower() for k in keywords)
 
+def is_multiparameter_analysis(cols: list) -> bool:
+    """Check if result has multiple ocean parameters (temp, salinity, pressure)."""
+    has_temp = any('temp' in c.lower() or c.lower() == 'avg' for c in cols)
+    has_sal = any('sal' in c.lower() for c in cols)
+    has_pres = any('pres' in c.lower() for c in cols)
+    # Return True if at least 2 of 3 parameters are present
+    return sum([has_temp, has_sal, has_pres]) >= 2
+
 # ─────────────────────────────
 # Compute Statistics from DataFrame
 # ─────────────────────────────
 def compute_stats(df):
-    """Extract key statistics from dataframe columns"""
+    """Compute summary statistics from a dataframe for the viz panel."""
     stats = []
-    
-    # Temperature stats
-    temp_cols = [c for c in df.columns if 'temp' in c.lower() or c.lower() == 'avg']
-    if temp_cols:
-        temp_col = temp_cols[0]
-        if pd.api.types.is_numeric_dtype(df[temp_col]):
+    cols = df.columns.tolist()
+
+    temp_col = next((c for c in cols if 'temp' in c.lower() or c.lower() == 'avg'), None)
+    sal_col = next((c for c in cols if 'sal' in c.lower()), None)
+    count_col = next((c for c in cols if 'count' in c.lower()), None)
+    pres_col = next((c for c in cols if 'pres' in c.lower()), None)
+
+    if temp_col and len(df) > 0:
+        try:
             stats.append(("Min Temp", f"{df[temp_col].min():.2f}°C"))
             stats.append(("Max Temp", f"{df[temp_col].max():.2f}°C"))
             stats.append(("Avg Temp", f"{df[temp_col].mean():.2f}°C"))
-    
-    # Salinity stats
-    sal_cols = [c for c in df.columns if 'sal' in c.lower()]
-    if sal_cols:
-        sal_col = sal_cols[0]
-        if pd.api.types.is_numeric_dtype(df[sal_col]):
+        except Exception:
+            pass
+
+    if sal_col and len(df) > 0:
+        try:
             stats.append(("Min Salinity", f"{df[sal_col].min():.2f} PSU"))
             stats.append(("Max Salinity", f"{df[sal_col].max():.2f} PSU"))
-    
-    # Count stats
-    count_cols = [c for c in df.columns if 'count' in c.lower()]
-    if count_cols:
-        count_col = count_cols[0]
-        if pd.api.types.is_numeric_dtype(df[count_col]):
-            stats.append(("Total Count", f"{int(df[count_col].sum()):,}"))
-    
-    # Data points count
-    stats.append(("Data Points", str(len(df))))
-    
+        except Exception:
+            pass
+
+    if count_col and len(df) > 0:
+        try:
+            total = int(df[count_col].sum())
+            stats.append(("Total Count", f"{total:,}"))
+        except Exception:
+            pass
+
+    if 'float_id' in cols:
+        try:
+            stats.append(("Unique Floats", f"{df['float_id'].nunique():,}"))
+        except Exception:
+            pass
+
+    if len(df) > 0:
+        stats.append(("Data Points", f"{len(df):,}"))
+
     return stats
 
 # ─────────────────────────────
-# Chart Function — Enhanced
+# Chart Function — for viz panel
 # ─────────────────────────────
-def show_chart(df, query=""):
+def show_chart(df, query="", container=None):
+    """Render charts in the given container (or st by default)."""
+    target = container if container else st
+
     if df is None or df.empty:
         return
+
+    def render_plotly_white(fig, target_container, height=440):
+        """Render a Plotly figure via raw HTML to bypass Streamlit's theme override."""
+        html_str = pio.to_html(
+            fig,
+            include_plotlyjs='cdn',
+            full_html=False,
+            config={'displayModeBar': True, 'responsive': True}
+        )
+        full_html = f"""
+        <div style="background:#ffffff; border-radius:6px; border:1px solid #d1d5db; padding:8px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            {html_str}
+        </div>
+        """
+        components.html(full_html, height=height + 30)
 
     cols = df.columns.tolist()
 
@@ -1565,57 +1699,212 @@ def show_chart(df, query=""):
     pres_col  = next((c for c in cols if 'pres' in c.lower()), None)
     count_col = next((c for c in cols if 'count' in c.lower()), None)
 
+    # Scientific chart layout — always white background, both themes
     plotly_layout = dict(
-        template=colors['plotly_template'],
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
+        template='plotly_white',
+        plot_bgcolor='#ffffff',
+        paper_bgcolor='#ffffff',
         height=420,
-        margin=dict(l=30, r=30, t=70, b=30),
-        font=dict(family="Inter", color=colors['text'], size=12),
-        xaxis=dict(gridcolor=colors['plotly_grid'], zeroline=False),
-        yaxis=dict(gridcolor=colors['plotly_grid'], zeroline=False),
+        margin=dict(l=60, r=30, t=65, b=55),
+        font=dict(family="Inter, Arial, sans-serif", color='#1f2937', size=12),
+        title_font=dict(family="Inter, Arial, sans-serif", size=15, color='#111827'),
+        xaxis=dict(
+            gridcolor='#e5e7eb',
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor='#d1d5db',
+            zerolinewidth=1,
+            linecolor='#374151',
+            linewidth=1,
+            ticks='outside',
+            tickcolor='#6b7280',
+            tickfont=dict(size=11, color='#374151'),
+            title_font=dict(size=12, color='#1f2937'),
+            showgrid=True,
+            mirror=True,
+        ),
+        yaxis=dict(
+            gridcolor='#e5e7eb',
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor='#d1d5db',
+            zerolinewidth=1,
+            linecolor='#374151',
+            linewidth=1,
+            ticks='outside',
+            tickcolor='#6b7280',
+            tickfont=dict(size=11, color='#374151'),
+            title_font=dict(size=12, color='#1f2937'),
+            showgrid=True,
+            mirror=True,
+        ),
         hoverlabel=dict(
-            bgcolor=colors['bg_solid'],
-            font_size=13,
-            font_family="Inter",
-            bordercolor=colors['primary']
-        )
+            bgcolor='#ffffff',
+            font_size=12,
+            font_family="Inter, Arial, sans-serif",
+            font_color='#111827',
+            bordercolor='#6b7280',
+        ),
+        legend=dict(
+            bgcolor='rgba(255,255,255,0.9)',
+            bordercolor='#d1d5db',
+            borderwidth=1,
+            font=dict(size=11, color='#374151'),
+        ),
     )
 
+    chart_rendered = False
+
+    # ═══════════════════════════════════
+    # MULTI-PARAMETER ANALYSIS — Priority
+    # ═══════════════════════════════════
+    if is_multiparameter_analysis(cols) and date_col:
+        target.markdown('<div class="viz-chart-label" style="color:#1f2937;">📊 Multi-Parameter Analysis</div>', unsafe_allow_html=True)
+        
+        try:
+            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+        except Exception:
+            pass
+        
+        # Prepare data
+        if 'latitude' in cols and 'longitude' in cols:
+            df_plot = df.drop_duplicates(subset=[date_col, 'latitude', 'longitude']).sort_values(date_col)
+        else:
+            df_plot = df.sort_values(date_col)
+        
+        # Create subplots for each parameter
+        has_temp = temp_col is not None
+        has_sal = sal_col is not None
+        has_pres = pres_col is not None
+        
+        num_plots = sum([has_temp, has_sal, has_pres])
+        
+        from plotly.subplots import make_subplots
+        
+        # Create subplot figure
+        specs = [[{"secondary_y": False}] for _ in range(num_plots)]
+        fig = make_subplots(
+            rows=num_plots, cols=1,
+            shared_xaxes=True,
+            subplot_titles=tuple(
+                t for t in [
+                    "🌡️ Temperature (°C)" if has_temp else None,
+                    "🧂 Salinity (PSU)" if has_sal else None,
+                    "🌊 Pressure (dbar)" if has_pres else None,
+                ] if t is not None
+            ),
+            vertical_spacing=0.12,
+        )
+        
+        row = 1
+        colors_map = {
+            'temp': '#0369a1',
+            'sal': '#0e7490',
+            'pres': '#7c3aed'
+        }
+        
+        if has_temp:
+            fig.add_trace(
+                go.Scatter(
+                    x=df_plot[date_col],
+                    y=df_plot[temp_col],
+                    mode='lines+markers',
+                    name='Temperature (°C)',
+                    line=dict(color=colors_map['temp'], width=2.5),
+                    marker=dict(size=5, color=colors_map['temp'], line=dict(width=0.5, color='#1e3a5f')),
+                    hovertemplate='<b>Date:</b> %{x|%Y-%m-%d}<br><b>Temp:</b> %{y:.2f}°C<extra></extra>',
+                ),
+                row=row, col=1
+            )
+            fig.update_yaxes(title_text="Temperature (°C)", row=row, col=1)
+            row += 1
+        
+        if has_sal:
+            fig.add_trace(
+                go.Scatter(
+                    x=df_plot[date_col],
+                    y=df_plot[sal_col],
+                    mode='lines+markers',
+                    name='Salinity (PSU)',
+                    line=dict(color=colors_map['sal'], width=2.5),
+                    marker=dict(size=5, color=colors_map['sal'], line=dict(width=0.5, color='#164e63')),
+                    hovertemplate='<b>Date:</b> %{x|%Y-%m-%d}<br><b>Salinity:</b> %{y:.2f} PSU<extra></extra>',
+                ),
+                row=row, col=1
+            )
+            fig.update_yaxes(title_text="Salinity (PSU)", row=row, col=1)
+            row += 1
+        
+        if has_pres:
+            fig.add_trace(
+                go.Scatter(
+                    x=df_plot[date_col],
+                    y=df_plot[pres_col],
+                    mode='lines+markers',
+                    name='Pressure (dbar)',
+                    line=dict(color=colors_map['pres'], width=2.5),
+                    marker=dict(size=5, color=colors_map['pres'], line=dict(width=0.5, color='#5b21b6')),
+                    hovertemplate='<b>Date:</b> %{x|%Y-%m-%d}<br><b>Pressure:</b> %{y:.1f} dbar<extra></extra>',
+                ),
+                row=row, col=1
+            )
+            fig.update_yaxes(title_text="Pressure (dbar)", row=row, col=1)
+        
+        # Update layout
+        fig.update_xaxes(title_text="Date", row=num_plots, col=1)
+        
+        # Create layout without height (will be set dynamically)
+        multi_param_layout = {k: v for k, v in plotly_layout.items() if k != 'height'}
+        
+        fig.update_layout(
+            **multi_param_layout,
+            title=dict(text="Multi-Parameter Oceanographic Analysis", font=dict(size=15, color='#111827')),
+            height=150 + (num_plots * 200),
+            showlegend=False,
+            hovermode='x unified',
+        )
+        
+        render_plotly_white(fig, target, height=150 + (num_plots * 200))
+        chart_rendered = True
+
     if wants_map(query) and 'latitude' in cols and 'longitude' in cols:
-        st.markdown(f"""<div class="chart-container">
-            <div class="chart-title">🗺️ Float Locations</div>
-        """, unsafe_allow_html=True)
+        target.markdown(f'<div class="viz-chart-label" style="color:#1f2937;">🗺️ Float Locations</div>', unsafe_allow_html=True)
         df_map = df.drop_duplicates(subset=['latitude', 'longitude'])
         fig = px.scatter_geo(
             df_map,
             lat='latitude',
             lon='longitude',
             hover_data=[c for c in cols if c in df_map.columns],
-            color_discrete_sequence=[colors['map_marker']]
+            color_discrete_sequence=['#0369a1']
         )
-        fig.update_traces(marker=dict(size=10, opacity=0.85,
-                                       line=dict(width=1.5, color='white')))
+        fig.update_traces(marker=dict(size=8, opacity=0.9, symbol='circle',
+                                       line=dict(width=1, color='#1e3a5f')))
         fig.update_geos(
             center=dict(lat=15, lon=75),
+            projection_type='natural earth',
             projection_scale=4,
             showcountries=True,
             showcoastlines=True,
             showocean=True,
-            oceancolor=colors['map_ocean'],
+            oceancolor='#e8f4fd',
             showland=True,
-            landcolor=colors['map_land'],
-            countrycolor=colors['map_border'],
-            coastlinecolor=colors['map_border']
+            landcolor='#f0f0f0',
+            countrycolor='#9ca3af',
+            coastlinecolor='#6b7280',
+            showlakes=True,
+            lakecolor='#dbeafe',
+            bgcolor='#ffffff',
         )
-        fig.update_layout(**plotly_layout, title=dict(text="Argo Float Locations — Indian Ocean", font=dict(size=16, color=colors['text'])))
-        st.plotly_chart(fig, width='stretch', theme=None)
-        st.markdown("</div>", unsafe_allow_html=True)
+        fig.update_layout(
+            **plotly_layout,
+            title=dict(text="Argo Float Locations — Indian Ocean", font=dict(size=15, color='#111827')),
+            geo=dict(bgcolor='#ffffff'),
+        )
+        render_plotly_white(fig, target)
+        chart_rendered = True
 
-    if temp_col and date_col:
-        st.markdown(f"""<div class="chart-container">
-            <div class="chart-title">🌡️ Temperature Over Time</div>
-        """, unsafe_allow_html=True)
+    if temp_col and date_col and not chart_rendered:
+        target.markdown('<div class="viz-chart-label" style="color:#1f2937;">🌡️ Temperature Over Time</div>', unsafe_allow_html=True)
         try:
             df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
         except Exception:
@@ -1628,31 +1917,28 @@ def show_chart(df, query=""):
 
         unique_times = df_plot[date_col].nunique()
         if unique_times <= 2:
-            st.metric("Average Temperature", f"{df[temp_col].mean():.2f}°C")
+            target.metric("Average Temperature", f"{df[temp_col].mean():.2f}°C")
         else:
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=df_plot[date_col],
                 y=df_plot[temp_col],
-                mode='lines',
-                name='Temperature',
-                line=dict(color=colors['primary'], width=2.5, shape='spline'),
-                fill='tozeroy',
-                fillcolor=f'rgba({colors["primary_rgb"]}, 0.08)',
+                mode='lines+markers',
+                name='Temperature (°C)',
+                line=dict(color='#0369a1', width=1.8, shape='linear'),
+                marker=dict(size=4, color='#0369a1', line=dict(width=0.5, color='#1e3a5f')),
             ))
             fig.update_layout(
                 **plotly_layout,
-                title=dict(text="Ocean Temperature Dynamics", font=dict(size=16, color=colors['text'])),
+                title=dict(text="Sea Water Temperature", font=dict(size=15, color='#111827')),
                 xaxis_title="Date",
-                yaxis_title="Temperature (°C)"
+                yaxis_title="Temperature (°C)",
             )
-            st.plotly_chart(fig, width='stretch', theme=None)
-        st.markdown("</div>", unsafe_allow_html=True)
+            render_plotly_white(fig, target)
+        chart_rendered = True
 
-    if sal_col and date_col and not temp_col:
-        st.markdown(f"""<div class="chart-container">
-            <div class="chart-title">🧂 Salinity Readings</div>
-        """, unsafe_allow_html=True)
+    if sal_col and date_col and not temp_col and not chart_rendered:
+        target.markdown('<div class="viz-chart-label" style="color:#1f2937;">🧂 Salinity Readings</div>', unsafe_allow_html=True)
         try:
             df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
         except Exception:
@@ -1662,42 +1948,44 @@ def show_chart(df, query=""):
             labels={sal_col: 'Salinity (PSU)', date_col: 'Date'}
         )
         fig.update_traces(marker=dict(
-            color=colors['primary'], size=9, opacity=0.8,
-            line=dict(width=1, color='white')
+            color='#0e7490', size=6, opacity=0.85, symbol='circle',
+            line=dict(width=0.8, color='#164e63')
         ))
         fig.update_layout(
             **plotly_layout,
-            title=dict(text="Ocean Salinity Tracking", font=dict(size=16, color=colors['text']))
+            title=dict(text="Ocean Salinity Measurements", font=dict(size=15, color='#111827')),
+            xaxis_title="Date",
+            yaxis_title="Salinity (PSU)",
         )
-        st.plotly_chart(fig, width='stretch', theme=None)
-        st.markdown("</div>", unsafe_allow_html=True)
+        render_plotly_white(fig, target)
+        chart_rendered = True
 
-    if pres_col and temp_col and not date_col:
-        st.markdown(f"""<div class="chart-container">
-            <div class="chart-title">🌊 Depth vs Temperature Profile</div>
-        """, unsafe_allow_html=True)
+    if pres_col and temp_col and not date_col and not chart_rendered:
+        target.markdown('<div class="viz-chart-label" style="color:#1f2937;">🌊 Depth vs Temperature</div>', unsafe_allow_html=True)
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=df[temp_col],
             y=df[pres_col],
             mode='lines+markers',
-            name='Temperature',
-            line=dict(color=colors['primary'], width=2.5, shape='spline'),
-            marker=dict(size=7, color=colors['bg_solid'],
-                        line=dict(color=colors['primary'], width=2))
+            name='Temperature (°C)',
+            line=dict(color='#0369a1', width=1.8, shape='linear'),
+            marker=dict(size=5, color='#0369a1',
+                        line=dict(color='#1e3a5f', width=0.8))
         ))
         fig.update_yaxes(autorange="reversed")
         fig.update_layout(
             xaxis_title="Temperature (°C)",
-            yaxis_title="Depth (dbar)",
+            yaxis_title="Pressure / Depth (dbar)",
             **plotly_layout,
-            title=dict(text="Vertical Temperature Profile", font=dict(size=16, color=colors['text']))
+            title=dict(text="Vertical Temperature Profile", font=dict(size=15, color='#111827')),
         )
-        st.plotly_chart(fig, width='stretch', theme=None)
-        st.markdown("</div>", unsafe_allow_html=True)
+        render_plotly_white(fig, target)
+        chart_rendered = True
 
-    if count_col and len(df) == 1:
-        st.metric(label="Total Count", value=f"{int(df[count_col].iloc[0]):,}")
+    if count_col and len(df) == 1 and not chart_rendered:
+        target.metric(label="Total Count", value=f"{int(df[count_col].iloc[0]):,}")
+
+    return chart_rendered
 
 # ─────────────────────────────
 # Sidebar — Redesigned
@@ -1898,7 +2186,7 @@ for msg in st.session_state.messages:
                     stat_cols = st.columns(2)
                     for i, (label, value) in enumerate(stats):
                         with stat_cols[i % 2]:
-                            st.markdown(f'<div style="background:{colors["card_bg"]};border:1px solid {colors["card_border"]};border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:10px;"><div style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,{colors["primary"]},{colors["accent"]});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{value}</div><div style="font-size:0.72rem;color:{colors["text_muted"]};text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:600;">{label}</div></div>', unsafe_allow_html=True)
+                            st.markdown(f'<div style="background:{colors["card_bg"]};border:1px solid {colors["card_border"]};border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:10px;"><div style="font-size:1.3rem;font-weight:800;color:{colors["primary"]};">{value}</div><div style="font-size:0.72rem;color:{colors["text_muted"]};text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:600;">{label}</div></div>', unsafe_allow_html=True)
                 
                 with st.expander("📄 View Raw Data"):
                     st.dataframe(df, use_container_width=True)
@@ -1973,7 +2261,7 @@ if st.session_state.is_processing and st.session_state.pending_query:
                     stat_cols = st.columns(2)
                     for i, (label, value) in enumerate(stats):
                         with stat_cols[i % 2]:
-                            st.markdown(f'<div style="background:{colors["card_bg"]};border:1px solid {colors["card_border"]};border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:10px;"><div style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,{colors["primary"]},{colors["accent"]});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{value}</div><div style="font-size:0.72rem;color:{colors["text_muted"]};text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:600;">{label}</div></div>', unsafe_allow_html=True)
+                            st.markdown(f'<div style="background:{colors["card_bg"]};border:1px solid {colors["card_border"]};border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:10px;"><div style="font-size:1.3rem;font-weight:800;color:{colors["primary"]};">{value}</div><div style="font-size:0.72rem;color:{colors["text_muted"]};text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:600;">{label}</div></div>', unsafe_allow_html=True)
                 
                 with st.expander("📄 View Raw Data"):
                     st.dataframe(df, width='stretch')

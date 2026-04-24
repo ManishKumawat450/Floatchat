@@ -17,8 +17,13 @@ Oceanographic data is vast, complex, and heterogeneous. The Argo program deploys
 **FloatChat bridges this gap** by enabling natural language access to Indian Ocean Argo data.
 
 ---
-
-## 🎯 What Can You Ask?
+ 
+## 🚀 Live Demo
+ 
+🔗 **[https://ai-float-chat.streamlit.app](https://ai-float-chat.streamlit.app)**
+ 
+---
+## 🎯 Someexapmle that can You Ask?
 
 ```
 "What is the average temperature in Arabian Sea in 2023?"

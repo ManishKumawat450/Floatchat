@@ -1733,6 +1733,8 @@ with st.sidebar:
         ("🧂", "Salinity profiles near equator in Jan 2024"),
         ("🌡️", "Avg temp in Arabian Sea in 2023?"),
         ("🌡️", "Analyze temperature anomalies in Arabian Sea (2023-2024)"),
+        ("📈", "Multi-parameter analysis: temperature, salinity, pressure"),
+        ("⏰", "Real-time ocean data summary - current observations"),
         ("🔢", "How many floats in the Indian Ocean?"),
         ("📍", "Float locations in Arabian Sea in 2023"),
     ]

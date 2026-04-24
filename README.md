@@ -7,7 +7,6 @@
 [![Groq](https://img.shields.io/badge/LLM-Groq%20LLaMA%203.3-green)](https://groq.com)
 [![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange)](https://chromadb.com)
 
-> Built for **INCOIS (Indian National Centre for Ocean Information Services)** under **Ministry of Earth Sciences, Government of India**
 
 ---
 
@@ -63,7 +62,7 @@ User Query (Natural Language)
 | Data Processing | Python, xarray, numpy | NetCDF parsing |
 | Relational DB | PostgreSQL 18 | Structured data storage |
 | Vector DB | ChromaDB | Semantic search + RAG |
-| Embeddings | sentence-transformers | Text embeddings |
+| Embeddings | sentence-transformers(all-MiniLM-L6-v2)  | Text embeddings |
 | LLM | Groq API (LLaMA 3.3-70B) | NL to SQL generation |
 | Frontend | Streamlit | Chat UI + Dashboard |
 | Visualization | Plotly | Maps + Graphs |
@@ -74,25 +73,24 @@ User Query (Natural Language)
 
 ```
 FloatChat/
-├── data/
-│   ├── argo_cache/              ← Downloaded NetCDF files
-│   └── processed_dates.txt      ← Tracks ingested dates
 ├── backend/
-│   ├── fetcher.py               ← Realtime data download
-│   ├── ingest.py                ← NetCDF → PostgreSQL
-│   ├── sql_generator.py         ← NL to SQL (Groq LLM)
-│   └── rag.py                   ← ChromaDB RAG pipeline
+│   ├── fetcher.py          # Real-time NetCDF download + caching
+│   ├── ingest.py           # NetCDF → PostgreSQL ingestion pipeline
+│   ├── sql_generator.py    # NL to SQL via Groq LLM
+│   └── rag.py              # ChromaDB RAG pipeline
 ├── frontend/
-│   └── app.py                   ← Streamlit dashboard
+│   └── app.py              # Streamlit chat dashboard
 ├── models/
-│   └── vector_store/            ← ChromaDB storage
+│   └── vector_store/       # ChromaDB persistent storage
 ├── database/
-│   └── schema.sql               ← PostgreSQL schema
-├── .env                         ← Environment variables
-├── requirements.txt             ← Dependencies
+│   └── schema.sql          # PostgreSQL table definitions
+├── data/
+│   ├── argo_cache/         # Downloaded NetCDF files (gitignored)
+│   └── processed_dates.txt # Track ingested dates
+├── .env                    # Environment variables (gitignored)
+├── requirements.txt        # Python dependencies
 └── README.md
 ```
-
 ---
 
 ## 🚀 Quick Start
@@ -182,14 +180,6 @@ FloatChat uses NLP at 4 stages:
 
 ---
 
-## 🗺️ Indian Ocean Coverage
-
-```
-Arabian Sea    : latitude  8-26°N, longitude  55-78°E
-Bay of Bengal  : latitude  5-22°N, longitude  80-101°E
-Indian Ocean   : latitude  0-26°N, longitude  55-101°E
-```
-
 ---
 
 ## 📈 Features
@@ -206,17 +196,6 @@ Indian Ocean   : latitude  0-26°N, longitude  55-101°E
 
 ---
 
-## 📚 Research Papers
-
-| Paper | Authors | Year | Link |
-|-------|---------|------|------|
-| OceanAI: Conversational Oceanographic Platform | Bowen Chen et al. | 2025 | [arxiv](https://arxiv.org/abs/2511.01019) |
-| Agentic RAG Survey | Singh et al. | 2025 | [arxiv](https://arxiv.org/abs/2501.09136) |
-| Text-to-SQL in LLM Era (IEEE TKDE) | Liu et al. | 2025 | [arxiv](https://arxiv.org/abs/2408.05109) |
-| Geo-OLM: Earth Observation with LLMs | Multiple | 2025 | [arxiv](https://arxiv.org/abs/2504.04319) |
-| Enhancing RAG: Best Practices | Li et al. | 2025 | [arxiv](https://arxiv.org/abs/2501.07391) |
-
----
 
 ## 🔑 API Keys Required
 
@@ -226,19 +205,10 @@ Indian Ocean   : latitude  0-26°N, longitude  55-101°E
 
 ---
 
-## 🏆 Organization
-
-- **Organization**: Ministry of Earth Sciences (MoES)
-- **Department**: INCOIS — Indian National Centre for Ocean Information Services
-- **Data Source**: Argo Global Data Repository (IFREMER GDAC)
-- **Indian Argo**: https://incois.gov.in/OON/index.jsp
-
----
 
 ## 📄 License
-
-This project is developed for the Smart India Hackathon 2025 under Problem Statement by INCOIS, Ministry of Earth Sciences, Government of India.
-
----
+ 
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+ 
 
 *Built with ❤️ for Indian Ocean Science*
